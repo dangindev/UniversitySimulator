@@ -55,7 +55,8 @@ describe('learning content integrity and public-release boundary', () => {
   });
 });
 
-const pythonAvailable = spawnSync('python', ['--version'], { timeout: 3000, windowsHide: true }).status === 0;
+const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
+const pythonAvailable = spawnSync(pythonCommand, ['--version'], { timeout: 3000, windowsHide: true }).status === 0;
 const sampleCases: Record<string, [string, string]> = {
   'algorithm-planning': ['3 5\n', '16'],
   'input-output': ['7 5\n', '12'],
@@ -83,7 +84,7 @@ describe.skipIf(!pythonAvailable)('trusted authored Python examples', () => {
       const slug = lesson.id.replace('intro-python-', '');
       const [input, expected] = sampleCases[slug]!;
       // Only trusted repository-authored reference examples execute here; learner submissions never do.
-      const output = execFileSync('python', ['-I', '-c', lesson.example!.code], {
+      const output = execFileSync(pythonCommand, ['-I', '-c', lesson.example!.code], {
         input, encoding: 'utf8', timeout: 3000, windowsHide: true,
       });
       expect(output.replace(/\r\n/g, '\n').trim()).toBe(expected);
@@ -143,7 +144,7 @@ describe.skipIf(!pythonAvailable)('all trusted Python practice references', () =
   for (const reference of practiceReferences.filter(item => item.language === 'python')) {
     it(`matches every published case: ${reference.exerciseId}`, () => {
       for (const test of reference.tests) {
-        const actual = execFileSync('python', ['-I', '-c', reference.source], {
+        const actual = execFileSync(pythonCommand, ['-I', '-c', reference.source], {
           input: test.input, encoding: 'utf8', timeout: 3000, windowsHide: true,
         });
         expect(actual.replace(/\r\n/g, '\n').trimEnd(), test.input).toBe(test.output.replace(/\r\n/g, '\n').trimEnd());

@@ -49,6 +49,18 @@ Các biến thể sai gồm cộng nhầm phiếu âm, loại nhầm khoản 0, 
 
 Kiểm thử tự động bổ sung kiểm tra độ phủ chủ đề, ánh xạ hai ngôn ngữ, tỷ trọng và điều kiện code, biến thể thi lại, giới hạn output, dữ liệu trùng, quyền riêng của serializer và việc production từ chối ngân hàng phát triển.
 
+## Kiểm chứng trên server Linux riêng tư
+
+Ngày 01/11/2026, bản thử tại `/srv/university-simulator` được truy cập qua SSH tunnel, với Node 24.14 và Docker Linux. API/frontend chỉ lắng nghe loopback; chưa đưa vào routing công khai.
+
+- **9/9 kiểm thử Docker thật đạt**: C++, Python, JavaScript, SQLite; phát hiện kết quả sai, lỗi biên dịch, lỗi khi chạy; giới hạn thời gian/đầu ra; không có mạng ra ngoài, socket Docker hay root filesystem có thể ghi; UID/capability và hạn mức bộ nhớ/PID đúng; không trả đáp án riêng; container được dọn và hàng đợi SQLite áp dụng kết quả thật.
+- `npm run test:m1-journey`: hai sinh viên giả, mỗi đường 18 checkpoint và **38 bài code**, tổng cộng **296 ca của bài luyện** qua HTTP API và Docker. Mỗi đường thi giữa kỳ, nộp code sai ở cuối kỳ rồi thi lại bằng đề khác. Kết quả giữa kỳ 10, cuối kỳ cố ý sai code 5 và môn chưa đạt, thi lại 10 và môn đạt 10; cả ba lượt được giữ trong lịch sử.
+- Luồng hai người chạy song song với tối đa hai job mất **296 giây**. Đây là kiểm tra chức năng bằng lời giải tác giả, không phải benchmark năng lực người mới hoặc năng lực phục vụ công khai.
+- Kiểm tra UI thật qua tunnel: tạo hồ sơ, đăng ký 16 tín chỉ, mã sai bị 0/3, sửa đúng đạt 3/3; tải lại vẫn khôi phục mã và kết quả. Điểm thực hành của một bài đúng là 0,26/10 trên đủ 38 bài.
+- Đã tạo snapshot SQLite nhất quán bằng `VACUUM INTO`, kiểm tra integrity và quyền 0600; dữ liệu nằm ngoài thư mục release.
+
+![Giao diện M1 chạy trên server qua SSH](images/m1-server.jpg)
+
 ## Giới hạn của bằng chứng
 
 Kiểm chứng này xác nhận các lời giải tham chiếu cho kết quả mong đợi trên bộ dữ liệu đã khai báo và các lỗi mẫu bị phát hiện. Nó không chứng minh mọi thuật toán tương đương, chất lượng thiết kế, cách tách hàm, độ sâu giải thích, năng lực học của người mới hay khả năng chịu tải của Docker/E2B.

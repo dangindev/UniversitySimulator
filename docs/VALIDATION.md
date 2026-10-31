@@ -1,6 +1,6 @@
 # Kiểm chứng bản phát triển nội bộ
 
-Ngày kiểm tra: **01/11/2026**, giờ Việt Nam. Đây là bằng chứng cho bản chạy cục bộ; chưa phải nghiệm thu phát hành phase 1.
+Ngày kiểm tra: **01/11/2026**, giờ Việt Nam. Báo cáo nền dưới đây thuộc commit `b520a7a`; kết quả mới cho M1 và bản chạy server nằm trong [kiểm chứng M1](M1-VERIFICATION.md). Đây chưa phải nghiệm thu phát hành phase 1.
 
 ## Kiểm tra tự động
 
