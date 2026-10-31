@@ -1,0 +1,9 @@
+{
+  "name":"@university-simulator/worker",
+  "version":"0.1.0",
+  "private":true,
+  "type":"module",
+  "scripts":{"dev":"tsx watch src/main.ts","start":"tsx src/main.ts","build":"tsc --noEmit","typecheck":"tsc --noEmit"},
+  "dependencies":{"@university-simulator/api":"0.1.0","dotenv":"^17.2.3"},
+  "devDependencies":{"tsx":"^4.21.0","typescript":"6.0.3","@types/node":"^24.10.0"}
+}

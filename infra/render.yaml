@@ -1,0 +1,112 @@
+# Provision only after the complete-content, private-bank and load-test launch gates pass.
+# Private bank/manifest are uploaded as Render secret files, never committed here.
+services:
+  - type: web
+    name: university-simulator-web
+    runtime: static
+    buildCommand: npm ci --include=dev && npm run build -w @university-simulator/web
+    staticPublishPath: apps/web/dist
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: 24.14.0
+      - key: VITE_API_URL
+        sync: false
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=()
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://university-simulator-api.onrender.com; worker-src 'self' blob:"
+  - type: web
+    name: university-simulator-api
+    runtime: node
+    region: singapore
+    plan: starter
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start -w @university-simulator/api
+    healthCheckPath: /api/v1/health
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: 24.14.0
+      - key: NODE_ENV
+        value: production
+      - key: ENABLE_DEV_AUTH
+        value: "false"
+      - key: ENABLE_DEV_ASSESSMENTS
+        value: "false"
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: E2B_API_KEY
+        sync: false
+      - key: E2B_TEMPLATE_ID
+        sync: false
+      - key: ASSESSMENT_BANK_PATH
+        value: /etc/secrets/assessment-bank.json
+      - key: CONTENT_MANIFEST_PATH
+        value: /etc/secrets/content-manifest.json
+      - key: EXECUTION_MONTHLY_SECONDS
+        value: "1000000"
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: university-simulator-queue
+          property: connectionString
+  - type: worker
+    name: university-simulator-grader
+    runtime: node
+    region: singapore
+    plan: starter
+    buildCommand: npm ci --include=dev
+    startCommand: npm run start -w @university-simulator/worker
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: 24.14.0
+      - key: NODE_ENV
+        value: production
+      - key: ENABLE_DEV_ASSESSMENTS
+        value: "false"
+      - key: DATABASE_URL
+        sync: false
+      - key: E2B_API_KEY
+        sync: false
+      - key: E2B_TEMPLATE_ID
+        sync: false
+      - key: ASSESSMENT_BANK_PATH
+        value: /etc/secrets/assessment-bank.json
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: university-simulator-queue
+          property: connectionString
+  - type: keyvalue
+    name: university-simulator-queue
+    region: singapore
+    plan: starter
+    ipAllowList: []
