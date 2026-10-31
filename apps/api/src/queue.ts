@@ -4,7 +4,8 @@ import type { ExecutionAdapter } from './execution.js';
 import type { Store } from './store.js';
 import {calculateProjectGrade,getCourse} from '@university-simulator/core';
 import {randomUUID} from 'node:crypto';
-import {applyExamSubmission} from './assessment.js';
+import {applyExamSubmission,recordCourseGrade} from './assessment.js';
+import {introPracticeScores} from './intro-practice.js';
 import {ApiError} from './types.js';
 import {createRedisExecutionControl,type ExecutionControl} from './admin-operations.js';
 
@@ -33,7 +34,7 @@ export async function processSubmission(id:string,store:Store,bank:AssessmentBan
       progress.checkpointScores??={};
       progress.checkpointScores[`code:${existing.exerciseId}`]=Math.max(progress.checkpointScores[`code:${existing.exerciseId}`]??0,result.passed/result.total*10);
       if(result.passed===result.total)progress.checkpointScores['verified-code']=10;
-      progress.practice=Object.values(progress.checkpointScores);
+      progress.practice=existing.courseId==='intro-programming'?introPracticeScores(student).values:Object.values(progress.checkpointScores);
       const exercise=bank.exercises.find(item=>item.id===existing.exerciseId);
       if(exercise?.projectStage&&getCourse(existing.courseId)?.kind==='project'){
         const stageKey=`project-stage-${exercise.projectStage}`;
@@ -46,6 +47,7 @@ export async function processSubmission(id:string,store:Store,bank:AssessmentBan
           if(previous)Object.assign(previous,record);else student.grades.push(record);
         }
       }
+      if(existing.courseId==='intro-programming')recordCourseGrade(student,existing.courseId);
     });
     await store.updateSubmission(id,submission=>{submission.progressApplied=true;});
   };

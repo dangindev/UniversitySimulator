@@ -18,7 +18,7 @@ University Simulator is a free, Vietnamese-language university learning game. Th
 
 M0: catalog, credit/prerequisite graph, design, persistence and interfaces. M1: complete and review the introductory learning loop in both tracks. M2: full internal semester. M3: all offered content, electives, internship and capstone. M4: learner trials plus security/load/cost/recovery validation. M5: public phase 1 release.
 
-One-course/one-semester builds are internal milestones. Public phase 1 requires the entire two-degree journey. A catalog entry or one starter lesson is not a complete course. Current content is explicitly draft/partial. Production startup checks an external reviewed-content manifest and private assessment bank rather than treating sample questions as official tests.
+One-course/one-semester builds are internal milestones. Public phase 1 requires the entire two-degree journey. A catalog entry or one starter lesson is not a complete course. Current content is explicitly draft/partial. Production startup checks the actual bundled content as well as an external reviewed-content manifest and private assessment bank. A private SSH preview can use the development bank and isolated Docker runner; it never binds a public interface or overrides the public-release gate.
 
 ## Capacity and economics
 

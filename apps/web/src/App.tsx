@@ -65,6 +65,9 @@ import Campus, { type CampusLocation } from "./Campus";
 import Timetable from "./Timetable";
 import ProjectPanel, { type ProjectExercise } from "./ProjectPanel";
 import OfficeLab from "./OfficeLab";
+import PracticePanel from "./PracticePanel";
+import { LessonTrace, LessonMistakes, LessonReflection } from "./LessonTools";
+import IntroCourseGuide from "./IntroCourseGuide";
 import { createAnswerAutosave, type AnswerAutosave } from "./answer-autosave";
 
 type Page =
@@ -105,7 +108,20 @@ type Student = {
   placementAt?: string;
   progress?: Record<
     string,
-    { lessons: string[]; attendance: string[]; practice: number[] }
+    {
+      lessons: string[];
+      attendance: string[];
+      practice: number[];
+      practiceAssessment?: {
+        score: number;
+        completed: number;
+        required: number;
+        verifiedExerciseIds: string[];
+        finalRequiredIds: string[];
+        missingFinalExerciseIds: string[];
+        projectScore?: number;
+      };
+    }
   >;
 };
 type PublicQuestion = {
@@ -1838,6 +1854,20 @@ function LearningScreen({
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState("");
   const lesson = ls[index];
+  const selectLesson = (next: number) => {
+    setIndex(next);
+    window.requestAnimationFrame(() =>
+      document
+        .getElementById("current-lesson")
+        ?.scrollIntoView({
+          block: "start",
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
+            .matches
+            ? "instant"
+            : "smooth",
+        }),
+    );
+  };
   useEffect(() => {
     setIndex(
       Math.max(
@@ -1866,7 +1896,7 @@ function LearningScreen({
             <button
               className={i === index ? "selected" : ""}
               key={l.id}
-              onClick={() => setIndex(i)}
+              onClick={() => selectLesson(i)}
             >
               <span>
                 {student.completedLessons.includes(l.id) ? (
@@ -1929,6 +1959,18 @@ function LearningScreen({
           )}
         </aside>
         <section className="card lesson-article">
+          {course.id === "intro-programming" && (
+            <IntroCourseGuide
+              track={student.track}
+              lessons={ls}
+              completedLessons={student.completedLessons}
+              assessment={student.progress?.[course.id]?.practiceAssessment}
+              onSelectLesson={(id) => {
+                const target = ls.findIndex((item) => item.id === id);
+                if (target >= 0) selectLesson(target);
+              }}
+            />
+          )}
           {lesson ? (
             <>
               <div className="lesson-eyebrow">
@@ -1940,7 +1982,9 @@ function LearningScreen({
                   {lesson.estimatedMinutes} phút gợi ý
                 </span>
               </div>
-              <h2>{lesson.title}</h2>
+              <h2 id="current-lesson" tabIndex={-1}>
+                {lesson.title}
+              </h2>
               <div className="learning-objective">
                 <Sprout size={19} />
                 <p>
@@ -1956,6 +2000,9 @@ function LearningScreen({
                   ))}
                 </section>
               ))}
+              {lesson.trace && (
+                <LessonTrace key={`trace-${lesson.id}`} trace={lesson.trace} />
+              )}
               {lesson.example && (
                 <section className="lesson-section">
                   <h3>Cùng xem một ví dụ</h3>
@@ -1971,12 +2018,17 @@ function LearningScreen({
                   </p>
                 </section>
               )}
+              {lesson.commonMistakes && (
+                <LessonMistakes mistakes={lesson.commonMistakes} />
+              )}
               {lesson.practice?.map((ex) => (
                 <PracticePanel
                   key={ex.id}
                   exercise={ex}
                   courseId={course.id}
                   userId={student.id}
+                  semester={student.semester}
+                  onUpdated={onUpdated}
                   onError={onError}
                 />
               ))}
@@ -2026,6 +2078,13 @@ function LearningScreen({
                   )}
                 </section>
               )}
+              {lesson.reflection && (
+                <LessonReflection
+                  key={`reflection-${lesson.id}`}
+                  reflection={lesson.reflection}
+                  draftKey={`${student.id}.${lesson.id}`}
+                />
+              )}
               {course.id === "office-skills" && (
                 <OfficeLab
                   busy={busy}
@@ -2055,7 +2114,7 @@ function LearningScreen({
                 <button
                   className="secondary"
                   disabled={index === 0}
-                  onClick={() => setIndex(index - 1)}
+                  onClick={() => selectLesson(index - 1)}
                 >
                   <ChevronLeft size={15} />
                   Bài trước
@@ -2063,7 +2122,7 @@ function LearningScreen({
                 <button
                   className="primary"
                   disabled={index === ls.length - 1}
-                  onClick={() => setIndex(index + 1)}
+                  onClick={() => selectLesson(index + 1)}
                 >
                   Bài tiếp theo
                   <ChevronRight size={15} />
@@ -2088,141 +2147,6 @@ function LearningScreen({
         </section>
       </div>
     </>
-  );
-}
-
-function PracticePanel({
-  exercise,
-  courseId,
-  userId,
-  onError,
-}: {
-  exercise: NonNullable<Lesson["practice"]>[number];
-  courseId: string;
-  userId: string;
-  onError: (s: string) => void;
-}) {
-  const draftKey = `usim.code-draft.${userId}.${exercise.id}`;
-  const [source, setSource] = useState(() => {
-    try {
-      return localStorage.getItem(draftKey) || exercise.starterCode;
-    } catch {
-      return exercise.starterCode;
-    }
-  });
-  useEffect(() => {
-    try {
-      if (source.length <= 32000) localStorage.setItem(draftKey, source);
-    } catch {
-      /* storage is optional for ungraded drafts */
-    }
-  }, [source, draftKey]);
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<any>(null);
-  const [hints, setHints] = useState(false);
-  async function submit() {
-    setBusy(true);
-    try {
-      let data = await api("/practice", "POST", {
-        courseId,
-        exerciseId: exercise.id,
-        language: exercise.language,
-        source,
-      });
-      setResult(data.submission || data);
-      const id = data.submission?.id || data.id;
-      for (let i = 0; id && i < 90; i++) {
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        data = await api(`/submissions/${id}`);
-        const submission = data.submission || data;
-        setResult(submission);
-        if (!["queued", "running"].includes(submission.status)) break;
-      }
-    } catch (error) {
-      onError((error as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <section className="practice-panel">
-      <div className="card-heading">
-        <h3>
-          <Terminal size={19} />
-          Phòng thực hành
-        </h3>
-        <Badge tone="blue">{exercise.language}</Badge>
-      </div>
-      <p>{exercise.prompt}</p>
-      <label className="sr-only" htmlFor={exercise.id}>
-        Mã nguồn bài thực hành
-      </label>
-      <textarea
-        className="code-editor"
-        id={exercise.id}
-        spellCheck={false}
-        value={source}
-        onChange={(e) => setSource(e.target.value)}
-        rows={10}
-      />
-      <div className="public-tests">
-        {exercise.publicTests.map((test, i) => (
-          <div key={i}>
-            <strong>Ví dụ {i + 1}</strong>
-            <span>Đầu vào</span>
-            <pre>{test.input || "(rỗng)"}</pre>
-            <span>Kết quả mong đợi</span>
-            <pre>{test.output}</pre>
-          </div>
-        ))}
-      </div>
-      <div className="practice-actions">
-        <button
-          className="primary"
-          onClick={() => void submit()}
-          disabled={
-            busy ||
-            !source.trim() ||
-            !["cpp", "python", "javascript", "sql"].includes(exercise.language)
-          }
-        >
-          <Play size={15} />
-          {busy ? "Đang xử lý…" : "Chạy & kiểm tra"}
-        </button>
-        <button className="text-button" onClick={() => setHints(!hints)}>
-          <CircleHelp size={16} />
-          {hints ? "Ẩn gợi ý" : "Cần một gợi ý?"}
-        </button>
-      </div>
-      {hints && (
-        <ul className="hint-list">
-          {exercise.hints.map((h) => (
-            <li key={h}>{h}</li>
-          ))}
-        </ul>
-      )}
-      {result && (
-        <div className="execution-result" role="status">
-          <strong>
-            {(
-              {
-                queued: "Đang xếp hàng",
-                running: "Đang kiểm tra",
-                passed: "Đã vượt qua kiểm thử",
-                failed: "Cần kiểm tra lại",
-                error: "Thực thi chưa hoàn tất",
-              } as Record<string, string>
-            )[result.status] || result.status}
-          </strong>
-          <p>{result.result?.feedback}</p>
-          {result.result?.output && <pre>{result.result.output}</pre>}
-        </div>
-      )}
-      <small className="muted">
-        Mã chạy trong môi trường cô lập. Chức năng thực thi cần được kết nối và
-        có hạn mức tài nguyên.
-      </small>
-    </section>
   );
 }
 

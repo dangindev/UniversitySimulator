@@ -1,14 +1,15 @@
-import { introLessons } from './intro.ts';
+import { introLessons } from './intro-course.ts';
 import { languageLessons, placementPractice } from './language.ts';
 import { moduleLessons } from './modules.ts';
 import { appliedLessons, languageBridgeLessons } from './applied.ts';
 import type { CourseReadiness, LearningTrack, Lesson } from './types.ts';
 
 export * from './types.ts';
-export { introLessons, makeIntroLessons } from './intro.ts';
+export { introLessons, makeIntroLessons, practiceReferences, getPracticeReference, introPracticeRequirements } from './intro-course.ts';
 export { languageLessons, placementPractice } from './language.ts';
 export { moduleLessons } from './modules.ts';
 export { appliedLessons, languageBridgeLessons } from './applied.ts';
+export { introSyllabus, introOutcomes, introTopicOrder, introTopicOutcomes, introProject } from './intro-syllabus.ts';
 
 export const lessons: Lesson[] = [...introLessons, ...languageLessons, placementPractice, ...moduleLessons, ...appliedLessons, ...languageBridgeLessons];
 

@@ -1,25 +1,25 @@
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {programs} from '@university-simulator/core';
 import {getLessons} from '@university-simulator/content';
-import {createDevelopmentBank} from '../src/bank.js';
+import {createTestBank,seedIntroPractice} from './fixtures.js';
 import {UniversityService,type Capabilities} from '../src/service.js';
 import {SqliteStore} from '../src/store.js';
 import {processSubmission} from '../src/queue.js';
 import type {ProgrammingTrack} from '@university-simulator/core';
 
 const capabilities:Capabilities={developmentAuth:true,assessmentMode:'development-samples',codeExecution:true,productionReady:false,curriculumVersion:'2026.v1',contentStatus:'draft'};
-let store:SqliteStore;let service:UniversityService;let now:number;let bank:ReturnType<typeof createDevelopmentBank>;
+let store:SqliteStore;let service:UniversityService;let now:number;let bank:ReturnType<typeof createTestBank>;
 const source='a, b = map(int, input().split())\nprint(a + b)\n';
 const complete={execute:async()=>({passed:4,total:4,feedback:'All isolated tests passed.'})};
 
-beforeEach(()=>{store=new SqliteStore(':memory:');bank=createDevelopmentBank();now=Date.parse('2026-11-01T00:00:00Z');service=new UniversityService(store,bank,capabilities,()=>now);});
+beforeEach(()=>{store=new SqliteStore(':memory:');bank=createTestBank(true);now=Date.parse('2026-11-01T00:00:00Z');service=new UniversityService(store,bank,capabilities,()=>now);});
 afterEach(async()=>{vi.restoreAllMocks();vi.unstubAllEnvs();await store.close();});
 
 async function prepare(id='owner',track:ProgrammingTrack='python'){
   await service.createStudent(id,{displayName:'Sinh viên kiểm thử',major:'it',track});
   await service.enroll(id,{courseIds:programs[0].recommendedPath[0]});
   for(const lesson of getLessons('intro-programming',track).filter(lesson=>lesson.checkpoint))await service.checkpoint(id,{courseId:'intro-programming',lessonId:lesson.id,answer:String(lesson.checkpoint!.answerIndex)});
-  await store.mutateStudent(id,student=>{student.progress['intro-programming'].checkpointScores['verified-code']=10;});
+  await store.mutateStudent(id,student=>{seedIntroPractice(student);});
   for(let i=1;i<16;i++)await service.advance(id,{unit:'week',confirm:true});
   const midterm=await service.startExam(id,{courseId:'intro-programming',kind:'midterm'});
   await service.saveExam(id,midterm.exam.id,{answers:Object.fromEntries(bank.assessments[0].questions.map(question=>[question.id,question.correctOption]))});

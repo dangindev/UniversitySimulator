@@ -1,0 +1,15 @@
+[Unit]
+Description=University Simulator consistent internal SQLite backup
+After=university-simulator-api.service
+
+[Service]
+Type=oneshot
+User=university-simulator
+Group=university-simulator
+ExecStart=/opt/university-simulator-runtime/bin/node /srv/university-simulator/current/infra/ssh/backup.mjs
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/university-simulator/state

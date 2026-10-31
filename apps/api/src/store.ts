@@ -22,6 +22,8 @@ export interface Store {
   reserveExecution(id: string, month: string, seconds: number, limit: number): Promise<boolean>;
   close(): Promise<void>;
   appendAdminAudit(event:AuditEvent):Promise<void>;
+  executionPaused():Promise<boolean>;
+  setExecutionPaused(paused:boolean):Promise<void>;
 }
 export interface ExecutionReservation {id:string;month:string;seconds:number;limit:number}
 
@@ -42,6 +44,8 @@ CREATE TRIGGER IF NOT EXISTS immutable_admin_audit_delete BEFORE DELETE ON admin
 INSERT OR IGNORE INTO schema_migrations VALUES(2, datetime('now'));
 UPDATE student_documents SET document=json_set(document,'$.curriculumVersion','2026.v1') WHERE json_type(document,'$.curriculumVersion') IS NULL;
 INSERT OR IGNORE INTO schema_migrations VALUES(3, datetime('now'));
+CREATE TABLE IF NOT EXISTS runtime_settings(key TEXT PRIMARY KEY,value TEXT NOT NULL);
+INSERT OR IGNORE INTO schema_migrations VALUES(4, datetime('now'));
 `;
 export class SqliteStore implements Store {
   readonly db: DatabaseSync;
@@ -163,6 +167,8 @@ export class SqliteStore implements Store {
   }
   async close() { this.db.close(); }
   async appendAdminAudit(event:AuditEvent){this.db.prepare('INSERT INTO admin_audit(id,document) VALUES(?,?)').run(event.id,JSON.stringify(event));}
+  async executionPaused(){return this.db.prepare("SELECT value FROM runtime_settings WHERE key='execution-paused'").get()?.value==='1';}
+  async setExecutionPaused(paused:boolean){this.db.prepare("INSERT INTO runtime_settings(key,value) VALUES('execution-paused',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(paused?'1':'0');}
 }
 
 export const postgresSchema = `
@@ -184,6 +190,9 @@ ALTER TABLE admin_audit ENABLE ROW LEVEL SECURITY;
 INSERT INTO schema_migrations(version) VALUES(2) ON CONFLICT DO NOTHING;
 UPDATE student_documents SET document=jsonb_set(document,'{curriculumVersion}','"2026.v1"'::jsonb) WHERE NOT document ? 'curriculumVersion';
 INSERT INTO schema_migrations(version) VALUES(3) ON CONFLICT DO NOTHING;
+CREATE TABLE IF NOT EXISTS runtime_settings(key TEXT PRIMARY KEY,value TEXT NOT NULL);
+ALTER TABLE runtime_settings ENABLE ROW LEVEL SECURITY;
+INSERT INTO schema_migrations(version) VALUES(4) ON CONFLICT DO NOTHING;
 `;
 
 export class PostgresStore implements Store {
@@ -280,6 +289,8 @@ export class PostgresStore implements Store {
   }
   async close() { await this.pool.end(); }
   async appendAdminAudit(event:AuditEvent){await this.pool.query('INSERT INTO admin_audit(id,document) VALUES($1,$2)',[event.id,event]);}
+  async executionPaused(){return (await this.pool.query("SELECT value FROM runtime_settings WHERE key='execution-paused'")).rows[0]?.value==='1';}
+  async setExecutionPaused(paused:boolean){await this.pool.query("INSERT INTO runtime_settings(key,value) VALUES('execution-paused',$1) ON CONFLICT(key) DO UPDATE SET value=excluded.value",[paused?'1':'0']);}
 }
 
 export async function createStore(): Promise<Store> {
@@ -288,7 +299,7 @@ export async function createStore(): Promise<Store> {
     const store = new PostgresStore(pool);
     if(process.env.NODE_ENV!=='production'||process.env.RUN_DATABASE_MIGRATIONS==='true')await store.initialize();
     else {
-      const version=(await pool.query('SELECT version FROM schema_migrations WHERE version=3')).rowCount;
+      const version=(await pool.query('SELECT version FROM schema_migrations WHERE version=4')).rowCount;
       if(!version)throw new Error('Apply PostgreSQL schema migrations with the migration role before starting the API.');
     }
     return store;

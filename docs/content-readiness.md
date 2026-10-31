@@ -4,7 +4,7 @@
 
 ## Đã biên soạn
 
-- Nhập môn lập trình: 14 chủ đề tương ứng ở mỗi đường C++ và Python, chung chuẩn đầu ra, ví dụ tự biên soạn, bài luyện có hợp đồng đầu vào/đầu ra, ca công khai, gợi ý và câu kiểm tra hiểu bài.
+- Nhập môn lập trình: 18 chủ đề, 38 bài code ở mỗi đường C++ và Python, chung sáu chuẩn đầu ra; có bảng vết, lỗi thường gặp, tự giải thích và ba mốc chương trình ngân sách. Cả hai đường đã kiểm chứng lời giải tham chiếu bằng runtime thật; xem [đề cương](M1-SYLLABUS.md) và [bằng chứng M1](M1-VERIFICATION.md). Chưa có duyệt học thuật độc lập.
 - Tiếng Anh 1–3 và Tiếng Anh chuyên ngành: mỗi môn ba mô-đun; có hướng dẫn riêng về xếp lớp và công nhận miễn học.
 - Mỗi học phần còn lại có một mô-đun mở đầu riêng, gồm khái niệm, ví dụ có lời giải, nhiệm vụ vận dụng, câu tự kiểm tra và nguồn.
 - Có nhiệm vụ mở đầu riêng cho thực tập, đồ án CNTT/KHMT, kỹ năng văn phòng và điều kiện thể chất/quốc phòng mô phỏng.
@@ -20,7 +20,7 @@ Việc hoàn thành câu hỏi một bài không chứng minh đã đạt toàn 
 
 1. Đối chiếu từng chuẩn đầu ra của đề cương với đủ bài giảng, thực hành, bài ứng dụng và phép đánh giá; hiện đa số môn mới có mô-đun mở đầu.
 2. Duyệt học thuật và nguồn tham khảo; đặc biệt cần biên tập các chuyên đề xã hội, lịch sử, tiếng Anh và nội dung thực hành chuyên sâu.
-3. Kiểm chứng toàn bộ ví dụ C++ bằng runtime chuẩn; ví dụ Python nhập môn có kiểm thử chạy mã tham chiếu khi môi trường kiểm thử có Python.
+3. Duy trì kiểm chứng C++/Python nhập môn trên runtime chuẩn khi thay đổi nội dung; đã chạy 82 lời giải đúng và 10 biến thể sai, tổng cộng 466 ca. Các môn khác vẫn cần mở rộng và kiểm chứng đầy đủ.
 4. Xây ngân hàng giữa kỳ/cuối kỳ/thi lại riêng; kiểm tra khả năng phát hiện lời giải sai có chủ đích, độ phủ chuẩn đầu ra và tính tương đương giữa biến thể.
 5. Hoàn thiện nhiệm vụ thực tập, các mốc đồ án và sản phẩm kiểm chứng; không quy đổi nội dung mở đầu thành đủ 2 hoặc 10 tín chỉ.
 6. Thử nghiệm với người mới và điều chỉnh nội dung từ bằng chứng làm bài. Phải kiểm định cách xác định mức tiếng Anh trước khi dùng kết quả miễn học chính thức.

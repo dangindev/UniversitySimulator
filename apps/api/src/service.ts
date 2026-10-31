@@ -9,6 +9,8 @@ import { gradeAnswers, publicQuestion, requireBank, type AssessmentBank } from '
 import { ApiError, type CourseProgress, type ExamAttempt, type StudentDocument, type Submission,type AuditEvent } from './types.js';
 import type { Store } from './store.js';
 import {applyExamSubmission,applyGradedExam,calculateExamScore,recordCourseGrade,recomputeExamComponents} from './assessment.js';
+import {assessIntroPractice,introPracticeScores} from './intro-practice.js';
+import {developmentAuthEnabled} from './auth.js';
 
 export interface Capabilities {
   developmentAuth: boolean;
@@ -17,6 +19,9 @@ export interface Capabilities {
   productionReady: boolean;
   curriculumVersion: string;
   contentStatus: string;
+  executionProvider?:'docker-local'|'e2b'|'disabled';
+  executionReason?:string;
+  executionConcurrency?:number;
 }
 
 export function bodyObject(value: unknown): Record<string, unknown> {
@@ -56,6 +61,7 @@ function progressFor(student: StudentDocument, courseId: string): CourseProgress
 function activeEnrollment(student: StudentDocument, courseId: string) {
   return student.enrollments.some(enrollment => enrollment.semester === student.semester && enrollment.courseId === courseId);
 }
+function assessmentExerciseIds(bank:AssessmentBank|null){return new Set(bank?.assessments.flatMap(assessment=>assessment.questions.flatMap(question=>question.kind==='code'?[...(question.exerciseId?[question.exerciseId]:[]),...Object.values(question.exerciseIds??{})]:[]))??[]);}
 function ledger(student: StudentDocument, activityId: string, amount: number, at: string) {
   student.balance += amount;
   student.ledger.push({ id: randomUUID(), activityId, amount, balance: student.balance, at });
@@ -75,7 +81,9 @@ function publicExam(exam: ExamAttempt) {
 export function publicStudent(student: StudentDocument | null) {
   if (!student) return null;
   const { exams, activityKeys, administrativeEvents, ...rest } = student;
-  return { ...rest, exams: exams.map(publicExam), summary: getTranscriptSummary(student.grades), graduation: auditGraduation(student.major, student.grades) };
+  const intro=student.progress['intro-programming']??{courseId:'intro-programming',lessons:[],attendance:[],practice:[],checkpointScores:{}};
+  const progress={...student.progress,'intro-programming':{...intro,practice:introPracticeScores(student).values,practiceAssessment:assessIntroPractice(student)}};
+  return { ...rest,progress, exams: exams.map(publicExam), summary: getTranscriptSummary(student.grades), graduation: auditGraduation(student.major, student.grades) };
 }
 
 export class UniversityService {
@@ -94,7 +102,7 @@ export class UniversityService {
       student: publicStudent(current), courses, programs, capabilities: this.capabilities,
       placementQuestions: this.bank?.placement.map(group => ({ level: group.level, questions: group.questions.map(publicQuestion) })) ?? [],
       activities: Object.entries(activityDefinitions).map(([id, activity]) => ({ id, ...activity })),
-      exercises: this.bank?.exercises.map(exercise => ({ id: exercise.id, courseId: exercise.courseId, title: exercise.title, language: exercise.language, prompt: exercise.prompt, projectStage:exercise.projectStage })) ?? [],
+      exercises: this.bank?.exercises.filter(exercise=>!assessmentExerciseIds(this.bank).has(exercise.id)).map(exercise => ({ id: exercise.id, courseId: exercise.courseId, title: exercise.title, language: exercise.language, prompt: exercise.prompt, projectStage:exercise.projectStage })) ?? [],
       serverTime: new Date(this.now()).toISOString(),
     };
   }
@@ -196,7 +204,7 @@ export class UniversityService {
       const progress = progressFor(current, courseId);
       progress.checkpointScores ??= {};
       progress.checkpointScores[lessonId] = Math.max(progress.checkpointScores[lessonId] ?? 0, correct ? 10 : 0);
-      progress.practice = Object.values(progress.checkpointScores);
+      progress.practice = courseId==='intro-programming'?introPracticeScores(current).values:Object.values(progress.checkpointScores);
       if (!bridge && !progress.attendance.includes(lessonId)) progress.attendance.push(lessonId);
       if (!bridge && !current.attendance.includes(lessonId)) current.attendance.push(lessonId);
       if (correct) {
@@ -261,13 +269,13 @@ export class UniversityService {
     if(courseId==='office-skills')throw new ApiError(409,'Tin học văn phòng được hoàn thành bằng sản phẩm văn bản, bảng tính và trình chiếu có kiểm chứng.','office_practical_required');
     if (!['midterm','final'].includes(String(body.kind))) throw new ApiError(400,'Loại kỳ thi không hợp lệ.');
     const kind = body.kind as 'midterm'|'final';
-    const definition = bank.assessments.find(item => item.courseId === courseId && item.kind === kind);
+    const definitions = bank.assessments.filter(item => item.courseId === courseId && item.kind === kind);
     if(getCourse(courseId)?.kind==='project')throw new ApiError(409,'Môn đồ án được đánh giá bằng ba mốc sản phẩm đã kiểm chứng, không cấp tín chỉ bằng bài thi chọn đáp án.','project_assessment_required');
-    if (!definition) throw new ApiError(503,'Học phần này chưa có bộ đánh giá sẵn sàng.','assessment_not_ready');
+    if (!definitions.length) throw new ApiError(503,'Học phần này chưa có bộ đánh giá sẵn sàng.','assessment_not_ready');
     const previous=await this.reconcileExams(userId);
     const resumed=previous?.exams.find(exam=>exam.courseId===courseId&&exam.kind===kind&&exam.semester===previous.semester&&['active','grading','grading-error'].includes(exam.status));
     if(resumed)return {student:publicStudent(previous),exam:publicExam(resumed),serverTime:new Date(this.now()).toISOString()};
-    const hasCode=definition.questions.some(question=>question.kind==='code');
+    const hasCode=definitions.some(definition=>definition.questions.some(question=>question.kind==='code'));
     if(hasCode){
       if(!this.capabilities.codeExecution)throw new ApiError(503,'Chưa có dịch vụ chấm mã sẵn sàng để mở kỳ thi lập trình.','execution_unavailable');
       await this.executionPreflight();
@@ -280,12 +288,16 @@ export class UniversityService {
       if (!activeEnrollment(student,courseId) && getCourse(courseId)?.category !== 'requirement') throw new ApiError(403,'Bạn chưa đăng ký học phần.');
       const active = student.exams.find(item => item.courseId === courseId && item.kind === kind && item.semester === student.semester && item.status === 'active');
       if (active) { examId = active.id; return; }
-      if (student.week < definition.availableWeek) throw new ApiError(409,`Kỳ thi mở từ tuần ${definition.availableWeek} trong game.`);
       if (student.exams.some(item => ['active','grading','grading-error'].includes(item.status))) throw new ApiError(409,'Hãy hoàn tất hoặc xử lý lượt thi đang diễn ra trước.');
       const attempts = student.exams.filter(item => item.courseId === courseId && item.kind === kind && item.semester === student.semester && item.status !== 'void');
+      const definition=definitions.find(definition=>definition.attemptNumber===attempts.length+1)??definitions[Math.min(attempts.length,definitions.length-1)]!;
+      if (student.week < definition.availableWeek) throw new ApiError(409,`Kỳ thi mở từ tuần ${definition.availableWeek} trong game.`);
       if (attempts.length >= (kind === 'final' ? 2 : 1)) throw new ApiError(409,'Đã hết lượt thi trong học kỳ này.');
       if (kind === 'final' && student.grades.some(item => item.courseId === courseId && item.semester === student.semester && item.status === 'passed')) throw new ApiError(409,'Bạn đã có kết quả học phần đạt yêu cầu.');
-      if (courseId === 'intro-programming' && kind === 'final' && !student.progress[courseId]?.checkpointScores?.['verified-code']) throw new ApiError(409,'Hoàn thành ít nhất một bài lập trình được kiểm thử trước khi thi cuối kỳ.','code_practice_required');
+      if (courseId === 'intro-programming' && kind === 'final'){
+        const practice=assessIntroPractice(student);
+        if(practice.missingFinalExerciseIds.length)throw new ApiError(409,`Còn ${practice.missingFinalExerciseIds.length} bài luyện đầu khóa hoặc mốc sản phẩm chưa đạt đủ kiểm thử. Hoàn thành trước khi thi cuối kỳ.`,'code_practice_required');
+      }
       const startedAt = new Date(this.now()).toISOString();
       const attempt: ExamAttempt = {
         id:randomUUID(),courseId,kind,semester:student.semester,definition:structuredClone(definition),
@@ -360,6 +372,18 @@ export class UniversityService {
     if(!reconciled)throw new ApiError(404,'Không tìm thấy sinh viên.');
     return reconciled;
   }
+  async retryLocalExam(userId:string,examId:string){
+    if(process.env.NODE_ENV==='production'||!developmentAuthEnabled()||!this.bank?.development||this.capabilities.executionProvider!=='docker-local')throw new ApiError(404,'Không có thao tác thử lại local.');
+    const operationId=randomUUID(),at=new Date(this.now()).toISOString(),reason='Chấm lại nguồn đã đóng băng sau sự cố Docker local.';
+    const event:AuditEvent={id:randomUUID(),operationId,action:'exam.retry',phase:'requested',actorId:`development-owner:${userId}`,at,reason,target:{studentId:userId,examId}};
+    await this.store.appendAdminAudit(event);
+    const completed:AuditEvent={...event,id:randomUUID(),phase:'succeeded'};
+    try{
+      const student=await this.retryExamGrading(userId,examId,reason,completed);
+      await this.store.appendAdminAudit(completed);
+      return {student:publicStudent(student),exam:publicExam(student.exams.find(exam=>exam.id===examId)!)};
+    }catch(error){await this.store.appendAdminAudit({...event,id:randomUUID(),phase:'failed'});throw error;}
+  }
   async voidExam(userId:string,examId:string,reason:string,auditEvent?:AuditEvent) {
     return this.store.mutateStudent(userId,student => {
       const exam=student.exams.find(item=>item.id===examId);
@@ -381,6 +405,7 @@ export class UniversityService {
     const bank = requireBank(this.bank);
     const courseId=textField(body.courseId,'Môn học');
     const exerciseId=textField(body.exerciseId,'Bài tập');
+    if(assessmentExerciseIds(bank).has(exerciseId))throw new ApiError(404,'Không tìm thấy bài luyện tập.');
     const source=textField(body.source,'Mã nguồn',64000);
     const exercise=bank.exercises.find(item=>item.id===exerciseId&&item.courseId===courseId&&item.language===body.language);
     if(!exercise)throw new ApiError(404,'Bài tập hoặc ngôn ngữ không hợp lệ.');

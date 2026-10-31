@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { programs,officeTask } from '@university-simulator/core';
 import { getLessons } from '@university-simulator/content';
-import { createDevelopmentBank } from '../src/bank.js';
+import { createTestBank as createDevelopmentBank,seedIntroPractice } from './fixtures.js';
 import { UniversityService, type Capabilities } from '../src/service.js';
 import { SqliteStore } from '../src/store.js';
 import { processSubmission } from '../src/queue.js';
@@ -67,7 +67,7 @@ describe('durable academic service',()=>{
     const updated=await service.enroll('owner',{courseIds:desired});
     expect(updated.student!.enrollments.some(enrollment=>enrollment.courseId==='english-1')).toBe(false);
     expect(updated.student!.balance).toBe(before!.balance+600000);
-    expect(updated.student!.progress['intro-programming']).toEqual(before!.progress['intro-programming']);
+    expect((await store.getStudent('owner'))!.progress['intro-programming']).toEqual(before!.progress['intro-programming']);
     const repeated=await service.enroll('owner',{courseIds:desired});expect(repeated.student!.balance).toBe(updated.student!.balance);
     const readded=await service.enroll('owner',{courseIds:firstSemester});expect(readded.student!.balance).toBe(before!.balance);
   });
@@ -92,7 +92,7 @@ describe('durable academic service',()=>{
     expect(improved.student!.progress['intro-programming'].midterm).toBeUndefined();expect(improved.student!.progress['intro-programming'].final).toBeUndefined();
     expect(improved.student!.summary.credits).toBe(4);expect(improved.student!.summary.gpa).toBe(1);
     for(const lesson of getLessons('intro-programming','python').filter(item=>item.checkpoint))await service.checkpoint('owner',{courseId:'intro-programming',lessonId:lesson.id,answer:String(lesson.checkpoint!.answerIndex)});
-    await store.mutateStudent('owner',student=>{student.progress['intro-programming'].checkpointScores['verified-code']=10;});
+    await store.mutateStudent('owner',student=>{seedIntroPractice(student);});
     await week16();
     for(const kind of ['midterm','final']){
       const attempt=await service.startExam('owner',{courseId:'intro-programming',kind});
@@ -237,7 +237,7 @@ describe('server deadlines, ownership and immutable exam definitions',()=>{
     expect(submitted.exam.score).toBe(10);
   });
   it('allows the final retake when the final met its floor but the overall course failed',async()=>{
-    await store.mutateStudent('owner',student=>{student.progress['intro-programming'].checkpointScores['verified-code']=10;});
+    await store.mutateStudent('owner',student=>{seedIntroPractice(student,true);});
     const first=await service.startExam('owner',{courseId:'intro-programming',kind:'final'});
     const three=Object.fromEntries(Object.entries(correctAnswers()).slice(0,3));
     await service.saveExam('owner',first.exam.id,{answers:three});

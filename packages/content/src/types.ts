@@ -9,11 +9,30 @@ export interface PublicTest {
 
 export interface Practice {
   id: string;
+  title?: string;
   prompt: string;
   starterCode: string;
   language: PracticeLanguage;
   publicTests: PublicTest[];
   hints: string[];
+  outcomeIds?: string[];
+  difficulty?: 'guided' | 'independent' | 'integration';
+  rubric?: { machineChecked: string[]; selfCheck: string[] };
+}
+
+export interface LessonTrace {
+  title: string;
+  columns: string[];
+  rows: string[][];
+  explanation: string;
+}
+
+export interface PracticeReference {
+  exerciseId: string;
+  lessonId: string;
+  language: LearningTrack;
+  source: string;
+  tests: PublicTest[];
 }
 
 export interface Checkpoint {
@@ -37,6 +56,11 @@ export interface Lesson {
   sources: string[];
   estimatedMinutes: number;
   reviewStatus: 'draft';
+  outcomeIds?: string[];
+  prerequisiteLessonIds?: string[];
+  trace?: LessonTrace;
+  commonMistakes?: { mistake: string; why: string; fix: string }[];
+  reflection?: { prompt: string; criteria: string[]; sampleAnswer?: string };
 }
 
 export interface CourseReadiness {

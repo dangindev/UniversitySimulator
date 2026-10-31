@@ -3391,3 +3391,363 @@ blockquote,
   color: #5c704d;
   margin-bottom: 24px;
 }
+
+.intro-course-guide {
+  border-bottom: 1px solid var(--line);
+  margin: -4px 0 32px;
+  padding-bottom: 26px;
+}
+.intro-guide-title {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.intro-guide-title h2 {
+  font-size: 22px;
+  margin: 8px 0 12px;
+}
+.intro-guide-title > .badge {
+  flex-shrink: 0;
+}
+.intro-course-guide p {
+  color: #65705f;
+  font-size: 12px;
+  line-height: 1.95;
+}
+.intro-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 20px 0;
+}
+.intro-progress-grid > div {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+}
+.intro-progress-grid svg {
+  color: var(--green);
+}
+.intro-progress-grid strong {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+.intro-progress-grid span {
+  font-size: 10px;
+  color: #64705d;
+  line-height: 1.6;
+}
+.intro-course-guide details,
+.practice-rubric,
+.practice-public-tests {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  margin: 12px 0;
+  padding: 13px 16px;
+  font-size: 12px;
+}
+summary {
+  cursor: pointer;
+  line-height: 1.8;
+}
+summary:focus-visible {
+  outline: 3px solid #b48633;
+  outline-offset: 4px;
+}
+.intro-course-guide summary {
+  font-weight: 600;
+}
+.intro-course-guide summary svg {
+  vertical-align: middle;
+  margin-right: 7px;
+}
+details[open] > summary {
+  margin-bottom: 12px;
+}
+.course-outcomes {
+  padding-left: 20px;
+}
+.course-outcomes li {
+  margin-bottom: 12px;
+  padding-left: 4px;
+}
+.course-outcomes p {
+  margin: 5px 0 0;
+}
+.grading-policy {
+  background: var(--sage);
+  border-radius: 8px;
+  padding: 15px;
+  margin: 18px 0;
+  font-size: 12px;
+  line-height: 1.9;
+}
+.grading-policy p {
+  margin: 10px 0 0;
+}
+.project-milestones {
+  display: grid;
+  gap: 12px;
+}
+.project-milestone {
+  padding: 16px;
+  background: var(--cream);
+  border-radius: 9px;
+  line-height: 1.9;
+}
+.project-milestone .card-heading {
+  align-items: flex-start;
+}
+.project-milestone h3 {
+  font-size: 13px;
+}
+.project-milestone ul,
+.practice-rubric ul {
+  padding-left: 18px;
+  line-height: 1.9;
+  font-size: 12px;
+  color: #56644e;
+}
+.exam-prerequisites {
+  background: #fffaf0;
+}
+.exam-prerequisites ul {
+  padding-left: 16px;
+}
+.exam-prerequisites .text-button {
+  font-size: 11px;
+  text-align: left;
+}
+#current-lesson {
+  scroll-margin-top: 24px;
+}
+.trace-lab,
+.reflection-lab {
+  background: #f6f8f2;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.trace-lab h3,
+.reflection-lab h3,
+.common-mistakes h3 {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+.trace-table-wrap {
+  overflow-x: auto;
+}
+.trace-lab table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  font-size: 12px;
+}
+.trace-lab th,
+.trace-lab td {
+  border: 1px solid #dce3d5;
+  padding: 10px 12px;
+  text-align: left;
+  line-height: 1.6;
+}
+.trace-lab th {
+  font-weight: 500;
+  background: var(--sage);
+  white-space: nowrap;
+}
+.trace-lab td {
+  font-family: Consolas, monospace;
+}
+.trace-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+}
+.trace-actions span {
+  color: #617052;
+  font-size: 11px;
+  margin-right: auto;
+}
+.trace-actions button {
+  font-size: 11px;
+}
+.trace-explanation {
+  margin: 14px 0 0;
+}
+.common-mistakes details {
+  border-bottom: 1px solid var(--line);
+  padding: 13px 0;
+  font-size: 12px;
+}
+.common-mistakes details p {
+  margin: 8px 0;
+}
+.reflection-lab > label {
+  display: block;
+  font-size: 12px;
+  line-height: 1.9;
+  margin-bottom: 10px;
+}
+.reflection-lab textarea {
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+  padding: 12px;
+  border: 1px solid #cfd9c5;
+  border-radius: 7px;
+  background: white;
+  font-size: 12px;
+  line-height: 1.9;
+}
+.reflection-lab > small {
+  font-size: 10px;
+  color: #65705d;
+  line-height: 1.8;
+  display: block;
+  margin-top: 7px;
+}
+.reflection-lab fieldset {
+  border: 0;
+  padding: 0;
+  margin: 18px 0 10px;
+}
+.reflection-lab legend {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.reflection-lab fieldset label {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 9px 0;
+}
+.reflection-lab input {
+  margin-top: 4px;
+  accent-color: var(--green);
+}
+.reflection-sample {
+  padding: 12px;
+  border-left: 3px solid #acbb95;
+  margin: 10px 0 0;
+  background: white;
+}
+.practice-prompt {
+  white-space: pre-line;
+}
+.practice-panel .code-title {
+  justify-content: space-between;
+  gap: 12px;
+}
+.practice-panel .code-title small {
+  font:
+    9px/1.6 "Be Vietnam Pro",
+    sans-serif;
+}
+.draft-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px;
+  margin-top: 8px;
+}
+.draft-actions > small {
+  font-size: 10px;
+  color: #748066;
+  margin-right: auto;
+}
+.draft-actions .text-button {
+  font-size: 10px;
+}
+.practice-public-tests > summary {
+  font-size: 11px;
+  font-weight: 500;
+}
+.practice-public-tests .public-tests {
+  margin: 0;
+}
+.practice-public-tests p {
+  font-size: 10px;
+  line-height: 1.8;
+}
+.practice-public-tests pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.practice-message {
+  background: var(--sand);
+  color: #705c39;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.9;
+  border-radius: 8px;
+}
+.execution-result > strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.execution-result.passed {
+  border-color: #bbceb0;
+  background: #f3f8ee;
+}
+.execution-result.failed {
+  border-color: #dfc99b;
+  background: #fff9ed;
+}
+.execution-result.error {
+  border-color: #d3bfb3;
+  background: #fcf4ee;
+}
+.execution-result details {
+  margin-top: 12px;
+  font-size: 11px;
+}
+.execution-result pre {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  max-height: 260px;
+  overflow-y: auto;
+}
+@media (max-width: 760px) {
+  .intro-guide-title {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .intro-progress-grid {
+    gap: 6px;
+  }
+  .intro-progress-grid > div {
+    padding: 10px 8px;
+  }
+  .intro-progress-grid strong {
+    font-size: 18px;
+  }
+  .intro-progress-grid span {
+    font-size: 9px;
+  }
+  .trace-lab,
+  .reflection-lab {
+    padding: 14px;
+  }
+  .project-milestone .card-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .practice-panel .code-title {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+}

@@ -41,6 +41,7 @@ export interface AssessmentDefinition {
   availableWeek: number;
   questions: PrivateQuestion[];
   isPublicDevelopmentSample: boolean;
+  attemptNumber?:1|2;
 }
 export interface ExamAttempt {
   id: string;
@@ -137,13 +138,18 @@ export interface Submission {
   assessmentVersion: string;
   semester: number;
   completedAt?: string;
-  result?: { passed: number; total: number; feedback: string; output?: string };
+  result?: GradingResult;
   progressApplied?: boolean;
   executionClaim?: string;
   executionLeaseUntil?: string;
   examId?: string;
   questionId?: string;
 }
+export interface ExecutionTestResult {
+  index:number;public:boolean;status:'passed'|'wrong-answer'|'runtime-error'|'time-limit'|'output-limit';
+  input?:string;expected?:string;actual?:string;diagnostic?:string;
+}
+export interface GradingResult {passed:number;total:number;feedback:string;output?:string;tests?:ExecutionTestResult[];compileErrors?:string}
 export interface PrivateExercise {
   id: string;
   courseId: string;

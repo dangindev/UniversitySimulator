@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { getProgram, type ProgramId } from "@university-simulator/core";
+import { createDevelopmentBank } from "../apps/api/src/bank.js";
 
 // An isolated, disposable loopback API: this never sends load to a public service.
 const participants = 100;
@@ -10,6 +11,18 @@ const port = 3118;
 const runId = Date.now().toString(36);
 const dataDir = resolve(".data", `load-${runId}`);
 mkdirSync(dataDir, { recursive: true });
+// Explicit synthetic API-only fixture: this test does not benchmark M1 code assessment/execution.
+// The actual M1 development bank retains its required coding questions and distinct retake.
+const choiceFixture = createDevelopmentBank();
+choiceFixture.version = "api-load-public-choice-fixture.1";
+choiceFixture.assessments = choiceFixture.assessments.map((assessment) => ({
+  ...assessment,
+  id: `load-${assessment.id}`,
+  version: "api-load-public-choice-fixture.1",
+  questions: assessment.questions.filter((question) => question.kind !== "code"),
+}));
+const choiceFixturePath = resolve(dataDir, "public-choice-fixture.json");
+writeFileSync(choiceFixturePath, JSON.stringify(choiceFixture));
 const api = `http://127.0.0.1:${port}/api/v1`;
 let serverLog = "";
 const child = spawn(
@@ -24,11 +37,11 @@ const child = spawn(
       PORT: String(port),
       LOCAL_DATA_DIR: dataDir,
       ENABLE_DEV_AUTH: "true",
-      ENABLE_DEV_ASSESSMENTS: "true",
+      ENABLE_DEV_ASSESSMENTS: "false",
       DATABASE_URL: "",
       REDIS_URL: "",
       E2B_API_KEY: "",
-      ASSESSMENT_BANK_PATH: "",
+      ASSESSMENT_BANK_PATH: choiceFixturePath,
       SUPABASE_URL: "",
     },
     windowsHide: true,
@@ -145,7 +158,8 @@ try {
   const sorted = samples.toSorted((a, b) => a - b);
   const report = {
     testedAt: new Date().toISOString(),
-    environment: "isolated local SQLite development API",
+    environment: "isolated local SQLite development API with a public choice-only synthetic fixture",
+    assessmentFixture: "api-load-public-choice-fixture.1",
     concurrentLearners: participants,
     completedLearners: results.filter((result) => result.status === "fulfilled")
       .length,
@@ -158,7 +172,7 @@ try {
     flowErrors: errors,
     executionLoadVerified: false,
     limitation:
-      "This is a local API smoke/load test, not production, external-service, code-execution or real-learner validation.",
+      "This is an API-only smoke/load test using an explicitly synthetic public choice fixture; it does not benchmark the real M1 coding bank, production, external-service execution or real learners.",
   };
   writeFileSync(
     resolve(dataDir, "report.json"),

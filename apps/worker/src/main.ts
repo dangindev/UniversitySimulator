@@ -6,6 +6,7 @@ import {E2BExecutionAdapter} from '../../api/src/execution.js';
 import {startGradingWorker} from '../../api/src/queue.js';
 
 config({path:resolve(process.cwd(),'../../.env'),quiet:true});config({quiet:true});
+if(process.env.EXECUTION_PROVIDER==='docker-local')throw new Error('The development Docker grader runs inside the API process. Start the API instead of a second local worker.');
 if(!process.env.E2B_API_KEY||!process.env.E2B_TEMPLATE_ID||!process.env.REDIS_URL)throw new Error('Worker requires E2B_API_KEY, E2B_TEMPLATE_ID and REDIS_URL; learner code is never run on the host.');
 const store=await createStore();
 const bank=requireBank(loadAssessmentBank());

@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily University Simulator internal backup
+
+[Timer]
+OnCalendar=*-*-* 20:00:00 UTC
+Persistent=true
+RandomizedDelaySec=300
+Unit=university-simulator-backup.service
+
+[Install]
+WantedBy=timers.target

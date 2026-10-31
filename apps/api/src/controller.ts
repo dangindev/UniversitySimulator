@@ -31,7 +31,7 @@ export class UniversityController {
   @Post('admin/execution')async adminExecution(@Req()request:Request,@Body()value:unknown){const body=bodyObject(value);return adminOperations().setExecutionPaused(await verifyAdminIdentity(request.headers.authorization),body.paused,body.reason);}
   @Get('health')
   @ApiOperation({summary:'Read deployment capabilities; this does not certify Phase 1 readiness.'})
-  health(){return {status:'ok',...service.capabilities,serverTime:new Date().toISOString(),executionLimit:10};}
+  health(){return {status:'ok',...service.capabilities,serverTime:new Date().toISOString(),executionLimit:service.capabilities.executionConcurrency??10};}
 
   @Post('auth/dev')
   @ApiOperation({summary:'Local development sign-in. Disabled in production and unless explicitly enabled.'})
@@ -55,6 +55,7 @@ export class UniversityController {
   @Get('exams/:id')async exam(@Req()request:Request,@Param('id')id:string){return service.exam(await authorization(request),id);}
   @Put('exams/:id/answers')async saveExam(@Req()request:Request,@Param('id')id:string,@Body()value:unknown){return service.saveExam(await authorization(request),id,bodyObject(value));}
   @Post('exams/:id/submit')async submitExam(@Req()request:Request,@Param('id')id:string,@Body()value:unknown){return service.submitExam(await authorization(request),id,bodyObject(value));}
+  @Post('exams/:id/retry-local')async retryLocalExam(@Req()request:Request,@Param('id')id:string){return service.retryLocalExam(await authorization(request),id);}
   @Post('practice')async practice(@Req()request:Request,@Body()value:unknown){return service.practice(await authorization(request),bodyObject(value));}
   @Post('projects/:courseId/submit')async project(@Req()request:Request,@Param('courseId')courseId:string,@Body()value:unknown){return service.practice(await authorization(request),{...bodyObject(value),courseId});}
   @Get('submissions/:id')async submission(@Req()request:Request,@Param('id')id:string){return service.submission(await authorization(request),id);}

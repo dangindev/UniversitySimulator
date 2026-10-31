@@ -17,6 +17,8 @@ import { assertProductionContentReady } from './production-content.js';
 import { startOutboxDispatcher,gradingPreflight } from './queue.js';
 import {VerifiedRateLimiter} from './rate-limiter.js';
 import {AdminOperations,createRedisExecutionControl} from './admin-operations.js';
+import {DockerExecutionAdapter} from './docker-execution.js';
+import {createLocalExecutionControl,localGradingPreflight,startLocalGrader} from './local-grader.js';
 
 config({path:resolve(process.cwd(),'../../.env'),quiet:true});
 config({quiet:true});
@@ -39,6 +41,7 @@ class ApplicationModule{}
 function validateProduction(){
   if(process.env.NODE_ENV!=='production')return;
   if(process.env.ENABLE_DEV_AUTH==='true'||process.env.ENABLE_DEV_ASSESSMENTS==='true')throw new Error('Development authentication and public assessment samples are forbidden in production.');
+  if(process.env.EXECUTION_PROVIDER==='docker-local')throw new Error('Docker local execution is forbidden in production.');
   for(const key of ['DATABASE_URL','SUPABASE_URL','SUPABASE_ANON_KEY','CORS_ORIGIN','REDIS_URL','E2B_API_KEY','E2B_TEMPLATE_ID','ASSESSMENT_BANK_PATH','CONTENT_MANIFEST_PATH']){
     if(!process.env[key])throw new Error(`${key} is required in production.`);
   }
@@ -50,10 +53,15 @@ export async function startServer(){
   validateProduction();
   const bank=loadAssessmentBank();
   const store=await createStore();
-  const codeExecution=Boolean(process.env.E2B_API_KEY&&process.env.E2B_TEMPLATE_ID&&process.env.REDIS_URL&&bank);
-  const capabilities:Capabilities={developmentAuth:developmentAuthEnabled(),assessmentMode:bank?(bank.development?'development-samples':'private-reviewed'):'unavailable',codeExecution,productionReady:process.env.NODE_ENV==='production',curriculumVersion:'2026.v1',contentStatus:'authored-draft; academic review required'};
-  const executionControl=createRedisExecutionControl();
-  const service=new UniversityService(store,bank,capabilities,Date.now,()=>gradingPreflight(executionControl));
+  const provider=process.env.EXECUTION_PROVIDER??(process.env.NODE_ENV==='production'?'e2b':'docker-local');
+  const local=provider==='docker-local'&&process.env.NODE_ENV!=='production';
+  const adapter=local?new DockerExecutionAdapter():undefined;
+  const availability=adapter?await adapter.probe():undefined;
+  const codeExecution=Boolean(bank&&(local?availability?.available:provider==='e2b'&&process.env.E2B_API_KEY&&process.env.E2B_TEMPLATE_ID&&process.env.REDIS_URL));
+  const capabilities:Capabilities={developmentAuth:developmentAuthEnabled(),assessmentMode:bank?(bank.development?'development-samples':'private-reviewed'):'unavailable',codeExecution,productionReady:process.env.NODE_ENV==='production',curriculumVersion:'2026.v1',contentStatus:'authored-draft; academic review required',executionProvider:local?'docker-local':provider==='e2b'?'e2b':'disabled',executionReason:availability?.reason,executionConcurrency:local?2:10};
+  const executionControl=local?createLocalExecutionControl(store):createRedisExecutionControl();
+  const preflight=local?()=>localGradingPreflight(adapter!,executionControl!):()=>gradingPreflight(executionControl);
+  const service=new UniversityService(store,bank,capabilities,Date.now,preflight);
   configureController(service,new AdminOperations(service,store,{executionControl}));
   const app=await NestFactory.create(ApplicationModule,{bodyParser:true,logger:['error','warn','log']});
   app.setGlobalPrefix('api/v1');
@@ -70,7 +78,7 @@ export async function startServer(){
   app.useGlobalFilters(new ApplicationErrorFilter());
   const swaggerConfig=new DocumentBuilder().setTitle('University Simulator API').setDescription('Versioned academic, assessment and student-life APIs. Public development samples do not meet the Phase 1 launch gate.').setVersion('1.0').addBearerAuth().build();
   SwaggerModule.setup('api/docs',app,SwaggerModule.createDocument(app,swaggerConfig));
-  const dispatcher=codeExecution?startOutboxDispatcher(store,executionControl):{close:async()=>undefined};
+  const dispatcher=local&&bank?startLocalGrader(store,bank,adapter!,executionControl!,status=>{capabilities.codeExecution=status.available;capabilities.executionReason=status.reason;}):codeExecution?startOutboxDispatcher(store,executionControl):{close:async()=>undefined};
   let sweeping=false;
   const examSweep=setInterval(async()=>{
     if(sweeping)return;sweeping=true;

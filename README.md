@@ -23,8 +23,12 @@ Mở http://127.0.0.1:5173. Nút **Vào bản phát triển cục bộ** chỉ x
 - Bài học, ví dụ, checkpoint và trình soạn mã; học liệu có trạng thái sẵn sàng rõ ràng.
 - API NestJS: lưu tiến độ, xếp lớp, điểm danh, kỳ thi tính giờ, đời sống và chứng nhận ảo.
 - SQLite cho local; PostgreSQL cho production; JWT Supabase; outbox và BullMQ cho bài nộp.
-- Adapter E2B tách mã người học khỏi máy chủ; thiếu cấu hình thì báo chưa khả dụng, không chạy mã trên host hoặc giả lập kết quả đạt.
+- Bộ chạy Docker cục bộ cho phát triển, hàng đợi bền vững không cần Redis; E2B dành cho production. Thiếu bộ chạy thì báo chưa khả dụng, không chạy mã người học trên host hoặc giả lập kết quả đạt.
 - Đời sống, sổ thu chi, NPC và minigame nấu ăn/chạy né chướng ngại.
+
+M1 hiện có 18 chủ đề và 38 bài code ở **mỗi** đường C++/Python, bảng vết từng bước, lỗi thường gặp, bài tự giải thích và ba mốc chương trình ngân sách. Thi thử giữa kỳ, cuối kỳ và thi lại có đề riêng, mỗi đề gồm phần đọc hiểu và bài code bắt buộc. Xem [đề cương M1](docs/M1-SYLLABUS.md) và [cách bật Docker cục bộ](infra/local/README.md). Không có trợ giảng AI trong ứng dụng; gợi ý là học liệu biên soạn sẵn và bị tắt khi thi.
+
+Bản thử trên server dùng [cấu hình SSH nội bộ](infra/ssh/README.md), lưu dưới `/srv/university-simulator` và chỉ truy cập qua tunnel.
 
 ## Kiểm tra
 
@@ -34,6 +38,7 @@ npm test
 npm run build
 npm run readiness
 npm run test:load
+npm run verify:intro
 ```
 
 `npm run readiness -- --strict` trả mã lỗi khi chưa đủ điều kiện phát hành công khai. OpenAPI khi API chạy: http://127.0.0.1:3001/api/docs.

@@ -1,0 +1,29 @@
+[Unit]
+Description=University Simulator private static preview
+After=network.target university-simulator-api.service
+
+[Service]
+Type=simple
+User=university-simulator
+Group=university-simulator
+WorkingDirectory=/srv/university-simulator/current
+EnvironmentFile=/srv/university-simulator/state/runtime.env
+ExecStart=/opt/university-simulator-runtime/bin/node infra/ssh/preview-server.mjs
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryMax=256M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

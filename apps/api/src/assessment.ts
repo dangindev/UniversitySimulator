@@ -1,6 +1,7 @@
 import {calculateCourseGrade,getCourse} from '@university-simulator/core';
 import {getLessons} from '@university-simulator/content';
 import type {CourseProgress,ExamAttempt,StudentDocument,Submission} from './types.js';
+import {assessIntroPractice} from './intro-practice.js';
 
 export function progressFor(student:StudentDocument,courseId:string):CourseProgress{
   return student.progress[courseId]??={courseId,lessons:[],attendance:[],practice:[],checkpointScores:{}};
@@ -9,7 +10,8 @@ export function recordCourseGrade(student:StudentDocument,courseId:string){
   if(getCourse(courseId)?.kind==='project')return;
   const progress=progressFor(student,courseId);if(progress.final===undefined)return;
   const totalLessons=Math.max(1,getLessons(courseId,student.track).length);
-  const grade=getCourse(courseId)?.kind==='requirement'?{score:progress.final,passed:progress.final>=5}:calculateCourseGrade({attendance:Math.min(10,progress.attendance.length/totalLessons*10),practice:progress.practice.length?progress.practice.reduce((a,b)=>a+b,0)/progress.practice.length:0,midterm:progress.midterm??0,final:progress.final});
+  const practiceScore=courseId==='intro-programming'?assessIntroPractice(student).score:progress.practice.length?progress.practice.reduce((a,b)=>a+b,0)/progress.practice.length:0;
+  const grade=getCourse(courseId)?.kind==='requirement'?{score:progress.final,passed:progress.final>=5}:calculateCourseGrade({attendance:Math.min(10,progress.attendance.length/totalLessons*10),practice:practiceScore,midterm:progress.midterm??0,final:progress.final});
   const passed=grade.passed&&progress.finalCodeCriterionPassed!==false;
   const record={courseId,semester:student.semester,status:passed?'passed' as const:'failed' as const,score:grade.score,reason:progress.finalCodeCriterionPassed===false?progress.codeCriterionReason:undefined};
   const existing=student.grades.find(item=>item.courseId===courseId&&item.semester===student.semester&&item.status!=='exempt');

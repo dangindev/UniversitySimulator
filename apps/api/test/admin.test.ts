@@ -5,7 +5,7 @@ import { verifyAdminIdentity, assertVerifiedAdminActor, type AdminActor } from '
 import { AdminOperations, createRedisExecutionControl, EXECUTION_PAUSED_KEY, type ExecutionControl } from '../src/admin-operations.js';
 import { UniversityService, type Capabilities } from '../src/service.js';
 import { SqliteStore, type Store } from '../src/store.js';
-import { createDevelopmentBank } from '../src/bank.js';
+import { createTestBank as createDevelopmentBank } from './fixtures.js';
 
 const issuer = 'https://example.supabase.test/auth/v1';
 const signedHeader = 'Bearer signed.jwt.fixture';

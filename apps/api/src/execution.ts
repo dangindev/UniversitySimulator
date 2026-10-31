@@ -1,12 +1,7 @@
 import { Sandbox, CommandExitError } from 'e2b';
-import type { PrivateExercise, Submission } from './types.js';
+import type { PrivateExercise, Submission,GradingResult } from './types.js';
 
-export interface ExecutionResult {
-  passed: number;
-  total: number;
-  feedback: string;
-  output?: string;
-}
+export type ExecutionResult = GradingResult;
 export interface ExecutionAdapter {
   execute(submission: Submission, exercise: PrivateExercise): Promise<ExecutionResult>;
 }
