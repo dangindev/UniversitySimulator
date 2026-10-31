@@ -58,6 +58,7 @@ Ngày 01/11/2026, bản thử tại `/srv/university-simulator` được truy c�
 - Luồng hai người chạy song song với tối đa hai job mất **296 giây**. Đây là kiểm tra chức năng bằng lời giải tác giả, không phải benchmark năng lực người mới hoặc năng lực phục vụ công khai.
 - Kiểm tra UI thật qua tunnel: tạo hồ sơ, đăng ký 16 tín chỉ, mã sai bị 0/3, sửa đúng đạt 3/3; tải lại vẫn khôi phục mã và kết quả. Điểm thực hành của một bài đúng là 0,26/10 trên đủ 38 bài.
 - Đã tạo snapshot SQLite nhất quán bằng `VACUUM INTO`, kiểm tra integrity và quyền 0600; dữ liệu nằm ngoài thư mục release.
+- Sau khi chuyển sang release `20261101-93314b4` và restart API, đăng nhập lại hai hồ sơ giả vẫn đọc được đúng sinh viên, đủ 38 bài code và kết quả đạt môn. Snapshot sau đó được khôi phục vào thư mục dữ liệu riêng, mở bằng API tạm tại một cổng loopback khác và vượt cùng kiểm tra. API tạm đã được dừng; database đang phục vụ không bị ghi đè.
 
 ![Giao diện M1 chạy trên server qua SSH](images/m1-server.jpg)
 
